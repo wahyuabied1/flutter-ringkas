@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import 'core/app_theme.dart';
+import 'data/services/api_service.dart';
 
 // Auth
 import 'features/auth/view/welcome_screen.dart';
@@ -23,7 +25,10 @@ import 'features/transaksi/view/search_screen.dart';
 import 'features/profile/view/profile_screen.dart';
 import 'features/ringkasan/view/ringkasan_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  await openLocalDb();
   runApp(const ProviderScope(child: MyApp()));
 }
 

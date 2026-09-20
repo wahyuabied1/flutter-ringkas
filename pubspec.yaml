@@ -32,7 +32,6 @@ dependencies:
     sdk: flutter
   
   flutter_riverpod: 2.5.1
-  http: ^1.2.1
   image_picker: ^1.0.7
   http_parser: ^4.0.2
   fl_chart: ^0.66.1
@@ -43,6 +42,9 @@ dependencies:
   #provider: ^6.1.5+1
   shared_preferences: ^2.5.3
   intl: ^0.20.2
+  hive_ce: ^2.20.0
+  hive_ce_flutter: ^2.3.4
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:

@@ -20,7 +20,7 @@ Splash ──(token ada)──────────────────�
 
 ## Pendaftaran (3 langkah)
 
-Data dari langkah 1 dan 2 ditampung dulu di state aplikasi. Akun baru dibuat di server hanya saat langkah 3 diselesaikan.
+Data dari langkah 1 dan 2 ditampung dulu di state aplikasi. Akun baru disimpan di perangkat hanya saat langkah 3 diselesaikan. Akun ini bersifat lokal: hanya berlaku di perangkat tempat ia dibuat.
 
 | Langkah | Rute | Isi |
 |---|---|---|
@@ -28,7 +28,7 @@ Data dari langkah 1 dan 2 ditampung dulu di state aplikasi. Akun baru dibuat di 
 | 2/3 Mata Uang | `/register-currency` | Pilihan mata uang: IDR, USD, EUR, JPY. |
 | 3/3 Dompet & Saldo Awal | `/register-balance` | Nama dompet pertama (bawaan `Dompet Saya`) dan saldo awal. |
 
-Saat **Selesai** ditekan, aplikasi berturut-turut membuat akun, membuat dompet pertama, menyimpan token, lalu langsung membuka Beranda **tanpa perlu login ulang**. Pengguna baru juga otomatis mendapat 10 kategori bawaan (lihat [Struktur Spreadsheet](Struktur-Spreadsheet.md#kategori-bawaan)).
+Saat **Selesai** ditekan, aplikasi berturut-turut membuat akun, membuat dompet pertama, menyimpan token, lalu langsung membuka Beranda **tanpa perlu login ulang**. Pengguna baru juga otomatis mendapat 10 kategori bawaan (lihat [Penyimpanan Lokal](Penyimpanan-Lokal.md#kategori-bawaan)).
 
 ## Navigasi utama
 
@@ -80,6 +80,7 @@ Dibuka dari formulir transaksi (pilih kategori) dan halaman pengaturan kategori.
 - Kolom pencarian untuk menyaring daftar.
 
 ## Aturan penting
-- Setiap pengguna hanya melihat dompet, kategori, dan transaksinya sendiri.
+- Setiap pengguna hanya melihat dompet, kategori, dan transaksinya sendiri, meskipun beberapa akun dibuat di perangkat yang sama.
+- Aplikasi berjalan sepenuhnya tanpa internet. Data tersimpan di perangkat dan tidak ikut pindah ke perangkat lain.
 - Saldo dompet tidak disimpan. Nilainya dihitung setiap kali dibaca: `saldo awal + pemasukan - pengeluaran`.
 - Tanggal ditampilkan dengan format Indonesia (`id_ID`), misalnya `dd/MM/yyyy HH:mm`.

@@ -3,7 +3,6 @@
 ## Prasyarat
 
 - Flutter dengan Dart **3.9.2 atau lebih baru** (`environment: sdk: ^3.9.2` di `pubspec.yaml`). Flutter 3.35.x sudah dicoba.
-- Backend yang sudah berjalan. Lihat [Setup Backend](Setup-Backend.md).
 
 Jika Anda memakai [FVM](https://fvm.app) atau beberapa versi Flutter, pastikan `flutter --version` dan `dart --version` di terminal menunjukkan Dart 3.9.2 ke atas. Versi yang lebih lama gagal saat `flutter pub get` dengan pesan *"requires SDK version ^3.9.2"*.
 
@@ -14,7 +13,7 @@ flutter pub get
 flutter run
 ```
 
-Setelah mengubah `ApiService.baseUrl`, lakukan **Stop lalu Run**. Hot reload dan hot restart tidak cukup karena nilainya `const`.
+Tidak ada backend atau konfigurasi tambahan. Database dibuat otomatis saat aplikasi pertama dibuka.
 
 ## Memeriksa kode
 
@@ -23,7 +22,19 @@ dart analyze lib        # analisis statis
 dart format lib         # rapikan kode
 ```
 
-Analisis saat ini melaporkan sekitar 34 catatan tingkat *info* (misalnya `withOpacity` yang sudah usang dan pemakaian `BuildContext` setelah `await`). Tidak ada error atau peringatan. Detailnya ada di [Catatan Teknis](Catatan-Teknis.md).
+Analisis saat ini melaporkan sekitar 31 catatan tingkat *info* (misalnya `withOpacity` yang sudah usang dan pemakaian `BuildContext` setelah `await`). Tidak ada error atau peringatan. Detailnya ada di [Catatan Teknis](Catatan-Teknis.md).
+
+## Pengujian
+
+```bash
+flutter test test/local_api_test.dart
+```
+
+[`test/local_api_test.dart`](../../test/local_api_test.dart) menguji seluruh `ApiService` dengan Hive di direktori sementara. Uji ini tidak memakai emulator dan berjalan dalam hitungan detik. Setiap perubahan pada logika data sebaiknya disertai uji di berkas ini.
+
+`ApiService` dan model di `lib/data` adalah Dart murni (tanpa impor Flutter). Jadi bila `flutter test` bermasalah di komputer Anda, misalnya karena berkas `flutter_tester` belum diunduh (`flutter precache`), uji yang sama bisa dijalankan dengan `dart test` di proyek Dart biasa yang menunjuk ke folder itu.
+
+> `test/widget_test.dart` masih uji *counter* bawaan template dan tidak akan lolos. Lihat [Catatan Teknis](Catatan-Teknis.md).
 
 ## Konvensi
 
@@ -40,20 +51,11 @@ Analisis saat ini melaporkan sekitar 34 catatan tingkat *info* (misalnya `withOp
 
 ## Menambah fitur yang butuh data baru
 
-Contoh: menambah kolom atau endpoint baru.
-
-1. **Sheet:** tambahkan kolom di akhir baris header dan di `SCHEMA` pada `Code.gs`. Perbarui [Struktur Spreadsheet](Struktur-Spreadsheet.md).
-2. **Script:** ubah fungsi `dompetApi`, `kategoriApi`, atau `transaksiApi` di `Code.gs`, atau tambah cabang baru di `route()`.
-3. **Deploy:** buat *versi baru* pada deployment yang sama ([caranya](Setup-Backend.md#memperbarui-kode)).
-4. **Aplikasi:** tambah method di `ApiService` yang memanggil `_call('METHOD', '/path', body: ..., token: ...)`.
-5. **Model:** tambahkan field di kelas model dan `fromJson`.
-6. Perbarui [Backend Google Sheets](Backend-Google-Sheets.md) jika ada endpoint baru.
-
-Pola pemuatan data: bila sebuah layar butuh beberapa data yang tidak saling bergantung, jalankan dengan `Future.wait` seperti di `home_screen.dart`, jangan `await` satu per satu.
-
-## Menguji script tanpa menyentuh spreadsheet
-
-`Code.gs` hanya memakai layanan `SpreadsheetApp`, `Utilities`, `LockService`, `CacheService`, `ContentService`, dan `Session`. Anda bisa menjalankannya di Node dengan sheet tiruan (objek JavaScript biasa) untuk menguji alur register, dompet, dan transaksi tanpa menulis ke spreadsheet asli. Cara ini dipakai selama pengembangan untuk menghitung jumlah pembacaan sheet per request.
+1. **Field baru:** tambahkan kunci saat membuat atau mengubah baris di `ApiService`. Baris lama tidak punya kunci itu, jadi beri nilai bawaan saat membaca. Aturan lengkap mengubah skema ada di [Penyimpanan Lokal](Penyimpanan-Lokal.md#mengubah-skema).
+2. **Method baru:** tambahkan di `ApiService`, dengan pola yang sama: ambil `uid` dari token, filter berdasarkan `user_id`, lalu kembalikan `Map`.
+3. **Model:** tambahkan field di kelas model dan `fromJson`.
+4. **Uji:** tambahkan kasus di `test/local_api_test.dart`.
+5. **Dokumentasi:** perbarui [Penyimpanan Lokal](Penyimpanan-Lokal.md) bila ada field atau aturan baru.
 
 ## Package name
 
