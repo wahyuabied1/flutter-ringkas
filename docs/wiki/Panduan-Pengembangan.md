@@ -77,4 +77,10 @@ flutter build apk --release          # APK
 flutter build appbundle --release    # AAB untuk Play Store
 ```
 
+Build rilis Android memakai **R8** (`isMinifyEnabled = true`, `isShrinkResources = true`) dan `isDebuggable = false` di `android/app/build.gradle.kts`. Kode Java/Kotlin diperkecil dan disamarkan, dan resource yang tidak terpakai dibuang. Kode Dart tidak terpengaruh.
+
+- Aturan tambahan ada di `android/app/proguard-rules.pro` (saat ini kosong). Bila aplikasi rilis crash padahal versi debug normal, atau R8 melaporkan `Missing class ...`, tambahkan aturan `-keep` di sana.
+- **Selalu coba build rilis di perangkat** (`flutter run --release`) sebelum mengunggah, karena masalah R8 hanya muncul di mode rilis.
+- Berkas pemetaan nama (`build/app/outputs/mapping/release/mapping.txt`) dibutuhkan untuk membaca ulang laporan crash yang sudah disamarkan. Simpan bersama tiap rilis.
+
 > Konfigurasi rilis Android saat ini masih memakai **kunci debug** (`signingConfig = signingConfigs.getByName("debug")` di `build.gradle.kts`). Buat keystore rilis dan ganti sebelum mengunggah ke Play Store. Daftar lengkapnya ada di [Catatan Teknis](Catatan-Teknis.md#sebelum-rilis-ke-play-store).
