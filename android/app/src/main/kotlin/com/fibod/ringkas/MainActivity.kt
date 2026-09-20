@@ -1,4 +1,4 @@
-package com.example.ringkas_app
+package com.fibod.ringkas
 
 import io.flutter.embedding.android.FlutterActivity
 

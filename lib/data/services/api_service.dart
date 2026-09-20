@@ -5,34 +5,77 @@ import '../model/category_model.dart';
 import '../model/transaction_model.dart';
 
 class ApiService {
+  // URL Web App Google Apps Script (berakhiran /exec).
+  // Lihat apps_script/Code.gs untuk cara deploy.
   static const String baseUrl =
-      'https://ringkasapi.my.id/api'; // Ganti dengan URL API Anda
+      'https://script.google.com/macros/s/GANTI_DENGAN_DEPLOYMENT_ID/exec';
 
-  // STEP 1: REGISTER USER (Simpan ke tabel user)
+  // Apps Script hanya menerima POST/GET, tidak bisa membaca header Authorization,
+  // dan selalu membalas HTTP 200. Karena itu semua request dikirim sebagai POST
+  // dengan method, path, query, dan token di dalam body JSON, dan hasilnya dicek
+  // lewat field `status` pada respons.
+  Future<Map<String, dynamic>> _call(
+    String method,
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, String>? query,
+    String? token,
+  }) async {
+    var response = await http.post(
+      Uri.parse(baseUrl),
+      headers: {'Content-Type': 'text/plain; charset=utf-8'},
+      body: jsonEncode({
+        'method': method,
+        'path': path,
+        'query': query ?? {},
+        'body': body ?? {},
+        'token': token,
+      }),
+    );
+
+    // Apps Script menjawab POST dengan redirect; hasilnya diambil lewat GET.
+    for (var i = 0; i < 3; i++) {
+      final location = response.headers['location'];
+      if (response.statusCode < 300 ||
+          response.statusCode >= 400 ||
+          location == null) {
+        break;
+      }
+      response = await http.get(Uri.parse(location));
+    }
+
+    final dynamic data;
+    try {
+      data = jsonDecode(response.body);
+    } catch (_) {
+      throw Exception(
+        'Respons server tidak valid. Pastikan URL Apps Script benar dan '
+        'akses deployment diatur ke "Siapa saja".',
+      );
+    }
+
+    if (data is! Map<String, dynamic> || data['status'] != 'success') {
+      throw Exception(
+        data is Map ? (data['message'] ?? 'Terjadi kesalahan') : 'Terjadi kesalahan',
+      );
+    }
+    return data;
+  }
+
+  // STEP 1: REGISTER USER (Simpan ke sheet users)
   Future<Map<String, dynamic>> registerUser({
     required String name,
     required String email,
     required String password,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/register'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode({'name': name, 'email': email, 'password': password}),
+    return _call(
+      'POST',
+      '/register',
+      body: {'name': name, 'email': email, 'password': password},
     );
-
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 201 || response.statusCode == 200) {
-      return data;
-    } else {
-      throw Exception(data['message'] ?? 'Gagal mendaftar');
-    }
   }
 
-  // STEP 2: CREATE WALLET (Simpan ke tabel dompet)
+  // STEP 2: CREATE WALLET (Simpan ke sheet dompet)
   Future<Map<String, dynamic>> createWallet({
     required dynamic userId,
     required String name,
@@ -40,31 +83,18 @@ class ApiService {
     required double initialBalance,
     required String token,
   }) async {
-    final requestBody = {
-      'user_id': userId is String ? int.tryParse(userId) : userId,
-      'name': name,
-      'currency': currencyCode,
-      'initial_balance': initialBalance,
-      'is_active': true,
-    };
-
-    final response = await http.post(
-      Uri.parse('$baseUrl/dompet'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
+    return _call(
+      'POST',
+      '/dompet',
+      token: token,
+      body: {
+        'user_id': userId is String ? int.tryParse(userId) : userId,
+        'name': name,
+        'currency': currencyCode,
+        'initial_balance': initialBalance,
+        'is_active': true,
       },
-      body: jsonEncode(requestBody),
     );
-
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 201 || response.statusCode == 200) {
-      return data;
-    } else {
-      throw Exception(data['message'] ?? 'Gagal membuat dompet');
-    }
   }
 
   // LOGIN USER
@@ -72,144 +102,35 @@ class ApiService {
     required String email,
     required String password,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/login'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode({'email': email, 'password': password}),
+    return _call(
+      'POST',
+      '/login',
+      body: {'email': email, 'password': password},
     );
-
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      return data;
-    } else {
-      throw Exception(data['message'] ?? 'Login gagal');
-    }
   }
 
   // GET CURRENT USER (Fetch user profile menggunakan token)
   Future<Map<String, dynamic>> getCurrentUser({required String token}) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/users'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      // Handle jika response adalah List (array)
-      if (data is List) {
-        if (data.isNotEmpty && data[0] is Map) {
-          return data[0] as Map<String, dynamic>;
-        } else {
-          throw Exception('Response List kosong atau format tidak valid');
-        }
-      }
-
-      // Handle jika response adalah Map
-      if (data is Map<String, dynamic>) {
-        return data;
-      }
-
-      throw Exception('Response format tidak valid: ${data.runtimeType}');
-    } else {
-      throw Exception(data['message'] ?? 'Gagal mengambil data user');
-    }
+    return _call('GET', '/users', token: token);
   }
 
   // GET WALLETS (Fetch daftar dompet user)
   Future<Map<String, dynamic>> getWallets({required String token}) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/dompet'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final data = await _call('GET', '/dompet', token: token);
+    final dataMap = data['data'];
 
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      // Handle jika response adalah Map dengan struktur { status, massage, data }
-      if (data is Map && data['data'] is Map) {
-        final dataMap = data['data'] as Map;
-
-        // Get wallets from dompets field
-        List<dynamic> walletList = [];
-        if (dataMap['dompets'] is List) {
-          walletList = dataMap['dompets'] as List;
-        } else if (dataMap['data'] is List) {
-          walletList = dataMap['data'] as List;
-        } else if (dataMap['wallets'] is List) {
-          walletList = dataMap['wallets'] as List;
-        }
-
-        return {
-          'data': List<Map<String, dynamic>>.from(
-            walletList
-                .where((wallet) => wallet is Map)
-                .map(
-                  (wallet) => wallet is Map<String, dynamic>
-                      ? wallet
-                      : (wallet as Map).cast<String, dynamic>(),
-                ),
-          ),
-          'total_current_balance': _parseBalance(
-            dataMap['total_current_balance'],
-          ),
-        };
-      }
-
-      // Handle jika response adalah List (backward compatibility)
-      if (data is List) {
-        return {
-          'data': List<Map<String, dynamic>>.from(
-            data
-                .where((wallet) => wallet is Map)
-                .map(
-                  (wallet) => wallet is Map<String, dynamic>
-                      ? wallet
-                      : (wallet as Map).cast<String, dynamic>(),
-                ),
-          ),
-          'total_current_balance': 0.0,
-        };
-      }
-
-      // Handle jika response memiliki data field (simple array)
-      if (data is Map && data['data'] is List) {
-        return {
-          'data': List<Map<String, dynamic>>.from(
-            (data['data'] as List)
-                .where((wallet) => wallet is Map)
-                .map(
-                  (wallet) => wallet is Map<String, dynamic>
-                      ? wallet
-                      : (wallet as Map).cast<String, dynamic>(),
-                ),
-          ),
-          'total_current_balance': _parseBalance(data['total_current_balance']),
-        };
-      }
-
-      // If none of the above, return empty data
-      return {'data': [], 'total_current_balance': 0.0};
-    } else {
-      final errorMessage = data is Map
-          ? (data['message'] ??
-                data['massage'] ??
-                'Gagal mengambil daftar dompet')
-          : 'Gagal mengambil daftar dompet';
-      throw Exception(errorMessage);
+    if (dataMap is Map && dataMap['dompets'] is List) {
+      return {
+        'data': List<Map<String, dynamic>>.from(
+          (dataMap['dompets'] as List)
+              .where((wallet) => wallet is Map)
+              .map((wallet) => (wallet as Map).cast<String, dynamic>()),
+        ),
+        'total_current_balance': _parseBalance(dataMap['total_current_balance']),
+      };
     }
+
+    return {'data': [], 'total_current_balance': 0.0};
   }
 
   // GET WALLETS (Return List<Wallet> for model-based usage)
@@ -238,30 +159,17 @@ class ApiService {
     required double initialBalance,
     required String token,
   }) async {
-    final requestBody = {
-      'name': name,
-      'currency': currencyCode,
-      'initial_balance': initialBalance,
-      'is_active': true,
-    };
-
-    final response = await http.put(
-      Uri.parse('$baseUrl/dompet/$id'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
+    return _call(
+      'PUT',
+      '/dompet/$id',
+      token: token,
+      body: {
+        'name': name,
+        'currency': currencyCode,
+        'initial_balance': initialBalance,
+        'is_active': true,
       },
-      body: jsonEncode(requestBody),
     );
-
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      return data;
-    } else {
-      throw Exception(data['message'] ?? 'Gagal memperbarui dompet');
-    }
   }
 
   // DELETE WALLET (Hapus dompet user)
@@ -269,60 +177,22 @@ class ApiService {
     required dynamic id,
     required String token,
   }) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/dompet/$id'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      return data;
-    } else {
-      throw Exception(data['message'] ?? 'Gagal menghapus dompet');
-    }
+    return _call('DELETE', '/dompet/$id', token: token);
   }
 
   // GET CATEGORIES (Fetch daftar kategori)
   Future<List<Category>> getCategories({required String token}) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/kategori'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final data = await _call('GET', '/kategori', token: token);
 
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      // Handle jika response adalah List
-      if (data is List) {
-        return List<Category>.from(
-          data.map(
-            (kategori) => Category.fromJson(kategori as Map<String, dynamic>),
-          ),
-        );
-      }
-
-      // Handle jika response memiliki data field
-      if (data is Map && data['data'] is List) {
-        return List<Category>.from(
-          (data['data'] as List).map(
-            (kategori) => Category.fromJson(kategori as Map<String, dynamic>),
-          ),
-        );
-      }
-
-      throw Exception('Format response kategori tidak valid');
-    } else {
-      throw Exception(data['message'] ?? 'Gagal mengambil daftar kategori');
+    if (data['data'] is List) {
+      return List<Category>.from(
+        (data['data'] as List).map(
+          (kategori) => Category.fromJson(kategori as Map<String, dynamic>),
+        ),
+      );
     }
+
+    throw Exception('Format response kategori tidak valid');
   }
 
   // CREATE CATEGORY (Buat kategori baru)
@@ -334,31 +204,18 @@ class ApiService {
     required String icon,
     required String token,
   }) async {
-    final requestBody = {
-      'user_id': userId is String ? int.tryParse(userId) : userId,
-      'name': name,
-      'kind': kind,
-      'color': colorHex,
-      'icon': icon,
-    };
-
-    final response = await http.post(
-      Uri.parse('$baseUrl/kategori'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
+    return _call(
+      'POST',
+      '/kategori',
+      token: token,
+      body: {
+        'user_id': userId is String ? int.tryParse(userId) : userId,
+        'name': name,
+        'kind': kind,
+        'color': colorHex,
+        'icon': icon,
       },
-      body: jsonEncode(requestBody),
     );
-
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 201 || response.statusCode == 200) {
-      return data;
-    } else {
-      throw Exception(data['message'] ?? 'Gagal membuat kategori');
-    }
   }
 
   // UPDATE CATEGORY (Update kategori yang sudah ada)
@@ -370,30 +227,12 @@ class ApiService {
     required String icon,
     required String token,
   }) async {
-    final requestBody = {
-      'name': name,
-      'kind': kind,
-      'color': colorHex,
-      'icon': icon,
-    };
-
-    final response = await http.put(
-      Uri.parse('$baseUrl/kategori/$categoryId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(requestBody),
+    return _call(
+      'PUT',
+      '/kategori/$categoryId',
+      token: token,
+      body: {'name': name, 'kind': kind, 'color': colorHex, 'icon': icon},
     );
-
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      return data;
-    } else {
-      throw Exception(data['message'] ?? 'Gagal mengupdate kategori');
-    }
   }
 
   // DELETE CATEGORY (Hapus kategori)
@@ -401,19 +240,7 @@ class ApiService {
     required dynamic categoryId,
     required String token,
   }) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/kategori/$categoryId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode != 200 && response.statusCode != 204) {
-      final data = jsonDecode(response.body);
-      throw Exception(data['message'] ?? 'Gagal menghapus kategori');
-    }
+    await _call('DELETE', '/kategori/$categoryId', token: token);
   }
 
   // CREATE TRANSACTION (Buat transaksi baru)
@@ -442,31 +269,18 @@ class ApiService {
       throw Exception('Wallet ID tidak valid');
     }
 
-    final requestBody = {
-      'category_id': parsedCategoryId,
-      'dompet_id': parsedWalletId,
-      'trx_date': trxDate,
-      'amount': amount,
-      'note': note,
-    };
-
-    final response = await http.post(
-      Uri.parse('$baseUrl/transaksi'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
+    return _call(
+      'POST',
+      '/transaksi',
+      token: token,
+      body: {
+        'category_id': parsedCategoryId,
+        'dompet_id': parsedWalletId,
+        'trx_date': trxDate,
+        'amount': amount,
+        'note': note,
       },
-      body: jsonEncode(requestBody),
     );
-
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 201 || response.statusCode == 200) {
-      return data;
-    } else {
-      throw Exception(data['message'] ?? 'Gagal membuat transaksi');
-    }
   }
 
   // GET TRANSACTIONS (Fetch daftar transaksi user)
@@ -475,84 +289,39 @@ class ApiService {
     String? startDate,
     String? endDate,
   }) async {
-    final uri = Uri.parse('$baseUrl/transaksi');
-    final uriWithParams = startDate != null && endDate != null
-        ? uri.replace(
-            queryParameters: {'start_date': startDate, 'end_date': endDate},
-          )
-        : uri;
-
-    final response = await http.get(
-      uriWithParams,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+    final data = await _call(
+      'GET',
+      '/transaksi',
+      token: token,
+      query: startDate != null && endDate != null
+          ? {'start_date': startDate, 'end_date': endDate}
+          : null,
     );
 
-    final data = jsonDecode(response.body);
+    final dataMap = data['data'];
+    if (dataMap is Map) {
+      final txList = dataMap['transaksi'] is List
+          ? dataMap['transaksi'] as List
+          : <dynamic>[];
 
-    if (response.statusCode == 200) {
-      // Handle jika response adalah Map dengan struktur { status, massage, data }
-      if (data is Map && data['data'] is Map) {
-        final dataMap = data['data'] as Map;
-        List<dynamic> txList = [];
-
-        if (dataMap['transaksi'] is List) {
-          txList = dataMap['transaksi'] as List;
-        } else if (dataMap['transactions'] is List) {
-          txList = dataMap['transactions'] as List;
-        }
-
-        return {
-          'transactions': List<Map<String, dynamic>>.from(
-            txList
-                .where((tx) => tx is Map)
-                .map(
-                  (tx) => tx is Map<String, dynamic>
-                      ? tx
-                      : (tx as Map).cast<String, dynamic>(),
-                ),
-          ),
-          'saldo_awal': dataMap['saldo_awal'] ?? 0,
-          'saldo_akhir': dataMap['saldo_akhir'] ?? 0,
-          'total_transaksi': dataMap['total_transaksi'] ?? 0,
-        };
-      }
-
-      // Handle jika response adalah List
-      if (data is List) {
-        return {
-          'transactions': List<Map<String, dynamic>>.from(
-            data
-                .where((tx) => tx is Map)
-                .map(
-                  (tx) => tx is Map<String, dynamic>
-                      ? tx
-                      : (tx as Map).cast<String, dynamic>(),
-                ),
-          ),
-          'saldo_awal': 0,
-          'saldo_akhir': 0,
-          'total_transaksi': 0,
-        };
-      }
-
-      // Return empty structure
       return {
-        'transactions': [],
-        'saldo_awal': 0,
-        'saldo_akhir': 0,
-        'total_transaksi': 0,
+        'transactions': List<Map<String, dynamic>>.from(
+          txList
+              .where((tx) => tx is Map)
+              .map((tx) => (tx as Map).cast<String, dynamic>()),
+        ),
+        'saldo_awal': dataMap['saldo_awal'] ?? 0,
+        'saldo_akhir': dataMap['saldo_akhir'] ?? 0,
+        'total_transaksi': dataMap['total_transaksi'] ?? 0,
       };
-    } else {
-      throw Exception(
-        data is Map
-            ? (data['message'] ?? 'Gagal mengambil daftar transaksi')
-            : 'Gagal mengambil daftar transaksi',
-      );
     }
+
+    return {
+      'transactions': [],
+      'saldo_awal': 0,
+      'saldo_akhir': 0,
+      'total_transaksi': 0,
+    };
   }
 
   // GET TRANSACTIONS (Fetch daftar transaksi) - backward compatibility wrapper
@@ -606,93 +375,34 @@ class ApiService {
       queryParams['category_id'] = categoryId.toString();
     }
 
-    final uri = Uri.parse(
-      '$baseUrl/transaksi',
-    ).replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
-
-    final response = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+    final data = await _call(
+      'GET',
+      '/transaksi',
+      token: token,
+      query: queryParams,
     );
 
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      // Handle jika response adalah List
-      if (data is List) {
-        return List<Map<String, dynamic>>.from(
-          data.map((transaction) => transaction as Map<String, dynamic>),
-        );
-      }
-
-      // Handle jika response adalah Map dengan struktur { data: { transaksi: [...] } }
-      if (data is Map && data['data'] is Map) {
-        final dataMap = data['data'] as Map;
-        List<dynamic> txList = [];
-
-        if (dataMap['transaksi'] is List) {
-          txList = dataMap['transaksi'] as List;
-        } else if (dataMap['transactions'] is List) {
-          txList = dataMap['transactions'] as List;
-        }
-
-        return List<Map<String, dynamic>>.from(
-          txList
-              .where((tx) => tx is Map)
-              .map(
-                (tx) => tx is Map<String, dynamic>
-                    ? tx
-                    : (tx as Map).cast<String, dynamic>(),
-              ),
-        );
-      }
-
-      // Handle jika response memiliki data field (direct list)
-      if (data is Map && data['data'] is List) {
-        return List<Map<String, dynamic>>.from(
-          (data['data'] as List).map(
-            (transaction) => transaction as Map<String, dynamic>,
-          ),
-        );
-      }
-
-      throw Exception('Format response transaksi tidak valid');
-    } else {
-      throw Exception(data['message'] ?? 'Gagal mengambil daftar transaksi');
+    final dataMap = data['data'];
+    if (dataMap is Map && dataMap['transaksi'] is List) {
+      return List<Map<String, dynamic>>.from(
+        (dataMap['transaksi'] as List)
+            .where((tx) => tx is Map)
+            .map((tx) => (tx as Map).cast<String, dynamic>()),
+      );
     }
+
+    throw Exception('Format response transaksi tidak valid');
   }
 
   Future<Map<String, dynamic>> getTransactionById({
     required String token,
     required dynamic id,
   }) async {
-    final uri = Uri.parse('$baseUrl/transaksi/$id');
-    final response = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-    final data = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      if (data is Map<String, dynamic>) {
-        // Extract data dari field 'data' jika ada, atau return langsung
-        if (data['data'] is Map<String, dynamic>) {
-          return data['data'] as Map<String, dynamic>;
-        }
-        return data;
-      } else {
-        throw Exception('Format response transaksi tidak valid');
-      }
-    } else {
-      throw Exception(data['message'] ?? 'Gagal mengambil data transaksi');
+    final data = await _call('GET', '/transaksi/$id', token: token);
+    if (data['data'] is Map) {
+      return (data['data'] as Map).cast<String, dynamic>();
     }
+    throw Exception('Format response transaksi tidak valid');
   }
 
   // GET TRANSACTION BY ID (Return Transaction model)
@@ -702,28 +412,14 @@ class ApiService {
   }) async {
     final data = await getTransactionById(token: token, id: id);
     return Transaction.fromJson(data);
-  } // DELETE TRANSACTION (Hapus transaksi)
+  }
 
+  // DELETE TRANSACTION (Hapus transaksi)
   Future<Map<String, dynamic>> deleteTransaction({
     required String token,
     required dynamic id,
   }) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/transaksi/$id'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      return data;
-    } else {
-      throw Exception(data['message'] ?? 'Gagal menghapus transaksi');
-    }
+    return _call('DELETE', '/transaksi/$id', token: token);
   }
 
   // UPDATE TRANSACTION (Update transaksi)
@@ -736,30 +432,17 @@ class ApiService {
     required dynamic categoryId,
     required dynamic walletId,
   }) async {
-    final requestBody = {
-      'amount': amount,
-      'note': note,
-      'trx_date': trxDate,
-      'category_id': categoryId,
-      'dompet_id': walletId,
-    };
-
-    final response = await http.put(
-      Uri.parse('$baseUrl/transaksi/$id'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
+    return _call(
+      'PUT',
+      '/transaksi/$id',
+      token: token,
+      body: {
+        'amount': amount,
+        'note': note,
+        'trx_date': trxDate,
+        'category_id': categoryId,
+        'dompet_id': walletId,
       },
-      body: jsonEncode(requestBody),
     );
-
-    final data = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      return data;
-    } else {
-      throw Exception(data['message'] ?? 'Gagal mengupdate transaksi');
-    }
   }
 }
