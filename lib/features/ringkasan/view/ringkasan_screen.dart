@@ -79,8 +79,33 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
         return;
       }
 
-      // Fetch wallet data dari API
-      final walletsResponse = await _apiService.getWallets(token: token);
+      // Get date range based on filter
+      final dateRange = _getDateRange();
+      final startDate = dateRange['start'] as DateTime;
+      final endDate = dateRange['end'] as DateTime;
+      final startDateStr =
+          "${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}";
+      final endDateStr =
+          "${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}";
+
+      // Keempat permintaan tidak saling bergantung, jadi diminta sekaligus.
+      // Menunggunya satu per satu membuat loading berlipat ganda.
+      final results = await Future.wait<dynamic>([
+        _apiService.getWallets(token: token),
+        // Semua transaksi (tanpa filter tanggal) untuk allTransactions
+        _apiService.getTransactionsData(token: token),
+        // Transaksi dengan filter tanggal untuk saldo awal/akhir
+        _apiService.getTransactionsData(
+          token: token,
+          startDate: startDateStr,
+          endDate: endDateStr,
+        ),
+        _apiService.getCategories(token: token),
+      ]);
+      final walletsResponse = results[0] as Map<String, dynamic>;
+      final allTxData = results[1] as Map<String, dynamic>;
+      final txDataWithFilter = results[2] as Map<String, dynamic>;
+      final categoriesList = results[3] as List<Category>;
       final walletsData = walletsResponse['data'] as List? ?? [];
       final totalCurrentBalance = walletsResponse['total_current_balance'];
 
@@ -92,25 +117,7 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
         totalBalance = totalCurrentBalance.toDouble();
       }
 
-      // Get date range based on filter
-      final dateRange = _getDateRange();
-      final startDate = dateRange['start'] as DateTime;
-      final endDate = dateRange['end'] as DateTime;
-      final startDateStr =
-          "${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}";
-      final endDateStr =
-          "${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}";
-
-      // Fetch ALL transactions (no date filter) to store in allTransactions
-      final allTxData = await _apiService.getTransactionsData(token: token);
       final txList = allTxData['transactions'] as List<Map<String, dynamic>>;
-
-      // Fetch transactions WITH date filter to get saldo awal/akhir
-      final txDataWithFilter = await _apiService.getTransactionsData(
-        token: token,
-        startDate: startDateStr,
-        endDate: endDateStr,
-      );
 
       // Extract saldo awal and saldo akhir from API with date filter
       double fetchedSaldoAwal = 0;
@@ -130,8 +137,7 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
         fetchedSaldoAkhir = saldoAkhirValue.toDouble();
       }
 
-      // Fetch categories untuk mapping
-      final categoriesList = await _apiService.getCategories(token: token);
+      // Mapping kategori
       final categoryMap = <int, Category>{};
       for (var category in categoriesList) {
         categoryMap[category.id] = category;

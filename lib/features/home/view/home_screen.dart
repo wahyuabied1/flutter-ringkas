@@ -72,8 +72,16 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      // Fetch wallets from API
-      final walletsResponse = await _apiService.getWallets(token: token);
+      // Dompet, transaksi, dan kategori tidak saling bergantung, jadi diminta
+      // sekaligus. Menunggunya satu per satu membuat loading berlipat ganda.
+      final results = await Future.wait<dynamic>([
+        _apiService.getWallets(token: token),
+        _apiService.getTransactionsData(token: token),
+        _apiService.getCategories(token: token),
+      ]);
+      final walletsResponse = results[0] as Map<String, dynamic>;
+      final txData = results[1] as Map<String, dynamic>;
+      final categoriesList = results[2] as List<Category>;
       final walletsData = walletsResponse['data'] as List? ?? [];
       final totalCurrentBalance = walletsResponse['total_current_balance'];
 
@@ -113,8 +121,6 @@ class _HomeScreenState extends State<HomeScreen> {
             : processedWallets[0]['id'] as int?;
       }
 
-      // Fetch transactions with summary data
-      final txData = await _apiService.getTransactionsData(token: token);
       final txList = txData['transactions'] as List<Map<String, dynamic>>;
 
       // Parse monthly summary from API
@@ -128,8 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
         monthlyExpense = totalTranx.toDouble().abs();
       }
 
-      // Fetch categories untuk mapping
-      final categoriesList = await _apiService.getCategories(token: token);
+      // Mapping kategori
       final categoryMap = <int, Category>{};
       for (var category in categoriesList) {
         categoryMap[category.id] = category;

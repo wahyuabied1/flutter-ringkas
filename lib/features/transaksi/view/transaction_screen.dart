@@ -67,8 +67,16 @@ class _TransactionScreenState extends State<TransactionScreen> {
         return;
       }
 
-      // Fetch wallets from API
-      final walletsResponse = await _apiService.getWallets(token: token);
+      // Dompet, transaksi, dan kategori tidak saling bergantung, jadi diminta
+      // sekaligus. Menunggunya satu per satu membuat loading berlipat ganda.
+      final results = await Future.wait<dynamic>([
+        _apiService.getWallets(token: token),
+        _apiService.getTransactions(token: token),
+        _apiService.getCategories(token: token),
+      ]);
+      final walletsResponse = results[0] as Map<String, dynamic>;
+      final txList = results[1] as List<Map<String, dynamic>>;
+      final categoriesList = results[2] as List<Category>;
       final wallets = walletsResponse['data'] as List? ?? [];
       final totalCurrentBalance = walletsResponse['total_current_balance'];
 
@@ -80,11 +88,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
         totalBalance = totalCurrentBalance.toDouble();
       }
 
-      // Fetch transactions
-      final txList = await _apiService.getTransactions(token: token);
-
-      // Fetch categories untuk mapping
-      final categoriesList = await _apiService.getCategories(token: token);
+      // Mapping kategori
       final categoryMap = <int, Category>{};
       for (var category in categoriesList) {
         categoryMap[category.id] = category;

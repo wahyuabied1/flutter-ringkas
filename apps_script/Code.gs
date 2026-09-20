@@ -40,14 +40,25 @@ function setup() {
 function doGet() { return out({ status: 'success', message: 'Ringkas API aktif' }); }
 
 function doPost(e) {
+  _memo = {};
   const lock = LockService.getScriptLock();
+  let locked = false;
   try {
-    lock.waitLock(15000); // cegah dua request menulis bersamaan
-    return out(route(JSON.parse(e.postData.contents)));
+    const req = JSON.parse(e.postData.contents);
+    // Hanya request yang menulis (POST/PUT/DELETE, termasuk login dan register) yang
+    // perlu antre. Request baca (GET) boleh berjalan bersamaan dengan yang lain.
+    if (String(req.method || 'GET').toUpperCase() !== 'GET') {
+      lock.waitLock(15000);
+      locked = true;
+    }
+    return out(route(req));
   } catch (err) {
     return out({ status: 'error', message: err.message });
   } finally {
-    lock.releaseLock();
+    if (locked) {
+      SpreadsheetApp.flush(); // pastikan tulisan tersimpan sebelum request berikutnya membaca
+      lock.releaseLock();
+    }
   }
 }
 
@@ -87,6 +98,7 @@ const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, created_at:
 function authResponse(u) {
   const token = Utilities.getUuid() + Utilities.getUuid();
   insert('sessions', { token, user_id: u.id, created_at: now() });
+  cacheToken(token, publicUser(u));
   return ok({ access_token: token, user: publicUser(u) });
 }
 
@@ -135,11 +147,21 @@ function login(b) {
   return authResponse(u);
 }
 
+// Token yang sudah dikenal disimpan di cache supaya tiap request tidak perlu membaca
+// sheet sessions dan users lagi (pembacaan sheet adalah bagian yang paling lambat).
+const TOKEN_TTL = 21600; // detik, batas maksimum CacheService (6 jam)
+const cacheToken = (token, user) =>
+  CacheService.getScriptCache().put('tok_' + token, JSON.stringify(user), TOKEN_TTL);
+
 function authenticate(token) {
+  const hit = token && CacheService.getScriptCache().get('tok_' + token);
+  if (hit) return JSON.parse(hit);
   const s = all('sessions').find(r => r.token === token);
   const u = s && all('users').find(x => Number(x.id) === Number(s.user_id));
   if (!u) throw new Error('Unauthenticated');
-  return u;
+  const user = publicUser(u);
+  cacheToken(token, user);
+  return user;
 }
 
 // ---------- DOMPET ----------
@@ -312,7 +334,15 @@ const balanceOf = (w, trx, kinds) =>
 const userTrx = (uid) => all('transaksi').filter(t => Number(t.user_id) === uid);
 
 // ---------- AKSES SHEET ----------
+// Isi sheet dibaca sekali per request lalu dipakai ulang. Tiap pembacaan sheet memakan
+// waktu, dan satu request bisa membutuhkan sheet yang sama beberapa kali.
+// Setiap fungsi tulis di bawah menghapus cache sheet yang berubah.
+let _memo = {};
 function all(name) {
+  return _memo[name] || (_memo[name] = readSheet(name));
+}
+
+function readSheet(name) {
   const values = SS.getSheetByName(name).getDataRange().getValues();
   const head = values.shift();
   const expected = SCHEMA[name];
@@ -333,6 +363,7 @@ function insert(name, obj) {
   const cols = SCHEMA[name];
   if (cols.includes('id')) obj.id = all(name).reduce((m, r) => Math.max(m, Number(r.id)), 0) + 1;
   SS.getSheetByName(name).appendRow(cols.map(c => obj[c] === undefined ? '' : obj[c]));
+  delete _memo[name];
   return obj;
 }
 // Tulis banyak baris sekaligus (satu kali setValues) supaya register tidak lambat.
@@ -346,12 +377,15 @@ function insertMany(name, objs) {
   });
   const sh = SS.getSheetByName(name);
   sh.getRange(sh.getLastRow() + 1, 1, rows.length, cols.length).setValues(rows);
+  delete _memo[name];
 }
 function save(name, row) {
   const cols = SCHEMA[name];
   SS.getSheetByName(name).getRange(row._row, 1, 1, cols.length).setValues([cols.map(c => row[c])]);
+  delete _memo[name];
 }
 function removeRows(name, rows) {
   const sh = SS.getSheetByName(name);
   rows.map(r => r._row).sort((a, c) => c - a).forEach(n => sh.deleteRow(n)); // dari bawah supaya index tidak bergeser
+  delete _memo[name];
 }
