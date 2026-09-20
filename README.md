@@ -5,7 +5,7 @@ Aplikasi pencatat keuangan pribadi berbasis Flutter. Pengguna mencatat pemasukan
 Semua data disimpan **di perangkat** dengan database lokal [Hive CE](https://pub.dev/packages/hive_ce). Tidak ada server, tidak perlu internet, dan tidak perlu akun cloud.
 
 - **Package name:** `com.fibod.ringkas`
-- **Versi:** 1.0.0+1
+- **Versi:** 1.0.0+2
 - **Bahasa antarmuka:** Indonesia
 
 ## Fitur
