@@ -1,8 +1,18 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Kunci rilis dibaca dari android/key.properties (tidak masuk git).
+// Format dan caranya ada di docs/wiki/Panduan-Pengembangan.md.
+val keyPropsFile = rootProject.file("key.properties")
+val keyProps = Properties().apply {
+    if (keyPropsFile.exists()) FileInputStream(keyPropsFile).use { load(it) }
 }
 
 android {
@@ -30,6 +40,17 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (keyPropsFile.exists()) {
+            create("release") {
+                keyAlias = keyProps.getProperty("keyAlias")
+                keyPassword = keyProps.getProperty("keyPassword")
+                storeFile = file(keyProps.getProperty("storeFile"))
+                storePassword = keyProps.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true // R8: perkecil dan samarkan kode Java/Kotlin
@@ -39,13 +60,24 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Tanpa key.properties, rilis memakai kunci debug agar `flutter run --release`
+            // tetap bisa dipakai untuk uji lokal. AAB untuk Play Store dijaga di bawah.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 }
 
 flutter {
     source = "../.."
+}
+
+// AAB (format unggahan Play Store) tidak boleh ditandatangani kunci debug. Play menolaknya
+// dengan pesan "signed with the wrong key" dan kunci yang salah bisa terlanjur terdaftar.
+gradle.taskGraph.whenReady {
+    if (!keyPropsFile.exists() && allTasks.any { it.name == "bundleRelease" }) {
+        throw GradleException(
+            "android/key.properties belum ada, jadi AAB rilis akan ditandatangani kunci debug. " +
+                "Buat key.properties dari kunci unggah Play Store (lihat docs/wiki/Panduan-Pengembangan.md).",
+        )
+    }
 }

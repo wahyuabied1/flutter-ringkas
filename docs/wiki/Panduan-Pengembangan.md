@@ -83,4 +83,50 @@ Build rilis Android memakai **R8** (`isMinifyEnabled = true`, `isShrinkResources
 - **Selalu coba build rilis di perangkat** (`flutter run --release`) sebelum mengunggah, karena masalah R8 hanya muncul di mode rilis.
 - Berkas pemetaan nama (`build/app/outputs/mapping/release/mapping.txt`) dibutuhkan untuk membaca ulang laporan crash yang sudah disamarkan. Simpan bersama tiap rilis.
 
-> Konfigurasi rilis Android saat ini masih memakai **kunci debug** (`signingConfig = signingConfigs.getByName("debug")` di `build.gradle.kts`). Buat keystore rilis dan ganti sebelum mengunggah ke Play Store. Daftar lengkapnya ada di [Catatan Teknis](Catatan-Teknis.md#sebelum-rilis-ke-play-store).
+Daftar lengkap yang perlu dibereskan sebelum rilis ada di [Catatan Teknis](Catatan-Teknis.md#sebelum-rilis-ke-play-store).
+
+## Menandatangani rilis (Play Store)
+
+Play Store hanya menerima AAB yang ditandatangani dengan **kunci unggah yang sama** dengan unggahan pertama aplikasi ini. Bila salah, Play Console menolak dengan pesan *"Your Android App Bundle is signed with the wrong key"* dan menampilkan sidik jari SHA1 yang **diharapkan** serta yang **dipakai**.
+
+### Konfigurasi
+Buat berkas `android/key.properties` (sudah diabaikan git, jangan pernah di-commit):
+
+```properties
+storePassword=<kata sandi keystore>
+keyPassword=<kata sandi kunci>
+keyAlias=<alias kunci>
+storeFile=/path/absolut/ke/upload-keystore.jks
+```
+
+`android/app/build.gradle.kts` membaca berkas itu untuk build rilis.
+
+| Kondisi | Perilaku |
+|---|---|
+| `key.properties` ada | Rilis ditandatangani kunci di dalamnya |
+| `key.properties` tidak ada, `flutter build apk --release` | Memakai kunci **debug**. Hanya untuk uji lokal, jangan diunggah. |
+| `key.properties` tidak ada, `flutter build appbundle --release` | **Build dihentikan** dengan pesan penjelasan, agar AAB berkunci debug tidak sampai ke Play Store |
+
+### Memeriksa sidik jari kunci
+```bash
+keytool -list -v -keystore upload-keystore.jks -alias <alias>            # kunci di keystore
+keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab   # kunci yang dipakai di AAB
+```
+Bandingkan nilai `SHA1` dengan yang diminta Play Console (Setup > App signing > *Upload key certificate*).
+
+### Bila kunci yang diminta Play tidak ada
+Kunci itu dibuat oleh siapa pun yang pertama kali mengunggah aplikasi (bisa rekan tim, atau komputer lain). Urutan yang disarankan:
+
+1. **Cari keystore aslinya** dari orang atau komputer yang mengunggah pertama, lengkap dengan kata sandi dan alias. Bila unggahan pertama memakai kunci debug bawaan Android Studio, berkasnya `~/.android/debug.keystore` di komputer itu (alias `androiddebugkey`, kata sandi `android`).
+2. **Bila keystore hilang dan aplikasi memakai Play App Signing** (bawaan untuk aplikasi baru), minta reset kunci unggah di Play Console: **Setup > App signing > Request upload key reset**. Siapkan kunci baru:
+
+   ```bash
+   keytool -genkeypair -v -keystore upload-keystore.jks -alias upload \
+     -keyalg RSA -keysize 2048 -validity 10000
+   keytool -export -rfc -keystore upload-keystore.jks -alias upload -file upload_certificate.pem
+   ```
+
+   Lalu unggah `upload_certificate.pem` pada formulir reset. Lama prosesnya ditentukan Google, jadi ikuti petunjuk terbaru di Play Console.
+3. **Bila aplikasi tidak memakai Play App Signing**, kunci yang diminta adalah kunci penandatangan aplikasi itu sendiri dan tidak bisa direset. Tanpa berkasnya, aplikasi tidak bisa diperbarui lagi dan harus diterbitkan ulang sebagai aplikasi baru.
+
+**Cadangkan keystore dan kata sandinya** di tempat aman (penyimpanan terenkripsi atau pengelola kata sandi), terpisah dari repositori.

@@ -4,7 +4,7 @@ Daftar hal yang diketahui belum ideal di kode saat ini. Isinya diperiksa langsun
 
 ## Sebelum rilis ke Play Store
 
-- [ ] **Tanda tangan rilis.** Build rilis Android masih memakai kunci debug (`signingConfig = signingConfigs.getByName("debug")` di `android/app/build.gradle.kts`). Buat keystore rilis dan konfigurasikan.
+- [ ] **Kunci unggah Play Store.** Play sudah mengenal aplikasi ini dengan kunci unggah tertentu, sedangkan build rilis tanpa `android/key.properties` memakai kunci debug dan ditolak. Dapatkan keystore aslinya atau minta reset kunci unggah, lalu isi `key.properties`. Langkahnya ada di [Panduan Pengembangan](Panduan-Pengembangan.md#menandatangani-rilis-play-store).
 - [ ] **Uji build rilis di perangkat.** R8 (`minify` dan `shrinkResources`) sudah aktif untuk rilis. Jalankan `flutter run --release` dan coba semua alur utama untuk memastikan tidak ada yang hilang karena penyusutan kode.
 - [ ] **Nama aplikasi.** Label Android masih `ringkas_app` (`AndroidManifest.xml`) dan nama tampilan iOS `Ringkas App` (`Info.plist`). Samakan dengan nama yang diinginkan, misalnya `Ringkas`.
 - [ ] **Deskripsi proyek.** `description` di `pubspec.yaml` masih `A new Flutter project.`
