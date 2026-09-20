@@ -8,7 +8,7 @@ class ApiService {
   // URL Web App Google Apps Script (berakhiran /exec).
   // Lihat apps_script/Code.gs untuk cara deploy.
   static const String baseUrl =
-      'https://script.google.com/macros/s/GANTI_DENGAN_DEPLOYMENT_ID/exec';
+      'https://script.google.com/macros/s/AKfycbyIXxUZI1Qp10JZwzcsO7sz30A4MBYBVE6u1A2LoR_6bXnt0stqbbh0jbEte8lab9lQ/exec';
 
   // Apps Script hanya menerima POST/GET, tidak bisa membaca header Authorization,
   // dan selalu membalas HTTP 200. Karena itu semua request dikirim sebagai POST

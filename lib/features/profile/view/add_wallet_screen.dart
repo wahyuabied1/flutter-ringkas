@@ -51,15 +51,8 @@ class _AddWalletScreenState extends State<AddWalletScreen> {
         throw Exception('Token tidak ditemukan');
       }
 
-      if (userIdStr == null || userIdStr.isEmpty) {
-        throw Exception('User ID tidak ditemukan');
-      }
-
-      // Parse userId dari String ke int
-      final userId = int.tryParse(userIdStr);
-      if (userId == null) {
-        throw Exception('User ID tidak valid');
-      }
+      // userId tidak wajib: server menentukan pemilik dompet dari token
+      final userId = int.tryParse(userIdStr ?? '');
 
       // Parse initial balance
       final initialBalance = double.tryParse(initialBalanceController.text);

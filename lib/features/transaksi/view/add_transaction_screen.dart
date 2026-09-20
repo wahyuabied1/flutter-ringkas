@@ -175,10 +175,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         throw Exception('Token tidak ditemukan');
       }
 
-      if (userId.isEmpty && widget.transactionId == null) {
-        throw Exception('User ID tidak ditemukan');
-      }
-
       // Parse amount
       final amount = double.tryParse(amountController.text);
       if (amount == null) {

@@ -47,10 +47,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
         throw Exception('Token tidak ditemukan di response register');
       }
 
-      // STEP 3.5: FETCH USER DATA menggunakan token baru
-      final userResponse = await _apiService.getCurrentUser(token: token);
-
-      final userId = userResponse['id'];
+      // Id user sudah ada di response register; getCurrentUser hanya cadangan
+      // supaya tidak perlu satu request tambahan.
+      var userId = registerResult['user']?['id'];
+      userId ??= (await _apiService.getCurrentUser(token: token))['id'];
 
       if (userId == null) {
         throw Exception('UserId tidak ditemukan di user response');

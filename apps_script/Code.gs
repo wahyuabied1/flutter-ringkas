@@ -100,7 +100,30 @@ function register(b) {
     password_hash: hash(salt, String(b.password)),
     created_at: now(),
   });
+  seedCategories(user.id);
   return authResponse(user);
+}
+
+// Kategori bawaan untuk user baru: [nama, kind, warna, ikon].
+// Nama ikon harus sama dengan yang dikenali app (icon_picker_page.dart).
+const DEFAULT_CATEGORIES = [
+  ['Makanan & Minuman', 'expense', '#FF7043', 'restaurant'],
+  ['Transportasi', 'expense', '#42A5F5', 'directions_car'],
+  ['Belanja', 'expense', '#AB47BC', 'shopping_bag'],
+  ['Tagihan', 'expense', '#EF5350', 'credit_card'],
+  ['Hiburan', 'expense', '#FFCA28', 'movie'],
+  ['Kesehatan', 'expense', '#26A69A', 'local_hospital'],
+  ['Pendidikan', 'expense', '#5C6BC0', 'school'],
+  ['Gaji', 'income', '#66BB6A', 'attach_money'],
+  ['Bonus', 'income', '#5D9E85', 'card_giftcard'],
+  ['Investasi', 'income', '#29B6F6', 'trending_up'],
+];
+
+function seedCategories(userId) {
+  const created = now();
+  insertMany('kategori', DEFAULT_CATEGORIES.map(([name, kind, color, icon]) => ({
+    user_id: userId, name, kind, color, icon, created_at: created,
+  })));
 }
 
 function login(b) {
@@ -292,6 +315,12 @@ const userTrx = (uid) => all('transaksi').filter(t => Number(t.user_id) === uid)
 function all(name) {
   const values = SS.getSheetByName(name).getDataRange().getValues();
   const head = values.shift();
+  const expected = SCHEMA[name];
+  // Header yang berubah (mis. "id" diketik ulang) membuat kolom tidak terbaca dan
+  // menggagalkan request tanpa pesan yang jelas, jadi hentikan lebih awal.
+  if (head.slice(0, expected.length).join(',') !== expected.join(',')) {
+    throw new Error('Header sheet "' + name + '" salah. Baris 1 harus: ' + expected.join(', '));
+  }
   return values.map((r, i) => {
     const o = { _row: i + 2 };
     head.forEach((h, c) => {
@@ -305,6 +334,18 @@ function insert(name, obj) {
   if (cols.includes('id')) obj.id = all(name).reduce((m, r) => Math.max(m, Number(r.id)), 0) + 1;
   SS.getSheetByName(name).appendRow(cols.map(c => obj[c] === undefined ? '' : obj[c]));
   return obj;
+}
+// Tulis banyak baris sekaligus (satu kali setValues) supaya register tidak lambat.
+function insertMany(name, objs) {
+  if (!objs.length) return;
+  const cols = SCHEMA[name];
+  let nextId = all(name).reduce((m, r) => Math.max(m, Number(r.id)), 0) + 1;
+  const rows = objs.map(o => {
+    o.id = nextId++;
+    return cols.map(c => o[c] === undefined ? '' : o[c]);
+  });
+  const sh = SS.getSheetByName(name);
+  sh.getRange(sh.getLastRow() + 1, 1, rows.length, cols.length).setValues(rows);
 }
 function save(name, row) {
   const cols = SCHEMA[name];

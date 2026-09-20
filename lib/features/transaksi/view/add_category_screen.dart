@@ -142,15 +142,8 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         throw Exception('Token tidak ditemukan');
       }
 
-      if (userIdStr == null || userIdStr.isEmpty) {
-        throw Exception('User ID tidak ditemukan');
-      }
-
-      // Parse userId dari String ke int
-      final userId = int.tryParse(userIdStr);
-      if (userId == null) {
-        throw Exception('User ID tidak valid');
-      }
+      // userId tidak wajib: server menentukan pemilik kategori dari token
+      final userId = int.tryParse(userIdStr ?? '');
 
       // Call API to create category
       await _apiService.createCategory(
