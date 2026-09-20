@@ -1,0 +1,5 @@
+package com.example.ringkas_app
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
