@@ -14,17 +14,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<Map<String, String>> _onboardingData = [
     {
-      "image": "assets/images/Manage money-cuate 1.png",
+      "image": "assets/images/manage_money_cuate_1.webp",
       "title": "Mulai Hidup Lebih Teratur",
       "description": "Awali kebiasaan baik\ndengan mencatat keuangan harian.",
     },
     {
-      "image": "assets/images/Manage money-cuate 1 (1).png",
+      "image": "assets/images/manage_money_cuate_1_1.webp",
       "title": "Kategori Pengeluaran",
       "description": "Bantu kamu memahami ke mana uangmu pergi.",
     },
     {
-      "image": "assets/images/Manage money-cuate 1 (2).png",
+      "image": "assets/images/manage_money_cuate_1_2.webp",
       "title": "Grafik Sederhana",
       "description": "Lihat ringkasan keuanganmu dengan cepat.",
     },

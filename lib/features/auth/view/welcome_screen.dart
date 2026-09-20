@@ -16,7 +16,7 @@ class WelcomeScreen extends StatelessWidget {
             SizedBox(
               height: 180,
               child: Image.asset(
-                'assets/images/Logo RingkasRM.png',
+                'assets/images/logo_ringkas_rm.webp',
                 fit: BoxFit.contain,
               ),
             ),

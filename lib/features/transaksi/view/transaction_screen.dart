@@ -1139,7 +1139,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                     children: [
                       const SizedBox(height: 24),
                       Image.asset(
-                        "assets/images/Money stress-pana 1.png",
+                        "assets/images/money_stress_pana_1.webp",
                         width: 200,
                       ),
                       const SizedBox(height: 16),

@@ -66,7 +66,7 @@ class _SplashScreenState extends State<SplashScreen> {
               opacity: _logoOpacity,
               duration: const Duration(milliseconds: 1000),
               child: Image.asset(
-                'assets/images/Logo Ringkas.png',
+                'assets/images/logo_ringkas.webp',
                 width: 250,
                 height: 250,
               ),
