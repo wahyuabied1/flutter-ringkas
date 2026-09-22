@@ -11,7 +11,7 @@ Daftar hal yang diketahui belum ideal di kode saat ini. Isinya diperiksa langsun
 - [ ] **Kebijakan privasi dan penghapusan akun.** Belum ada. Lihat [Keamanan](Keamanan.md#bila-akan-dirilis-ke-play-store).
 - [ ] **Cadangan data.** Belum ada. Pengguna kehilangan semuanya bila aplikasi dihapus.
 - [ ] **Berkas lisensi.** Belum ada `LICENSE`.
-- [ ] **Uji Pindai Struk OVO dengan screenshot asli.** Pola pembacaannya (`ovo_receipt_parser.dart`) disusun dari contoh yang dibuat sendiri, **belum pernah dicoba dengan screenshot OVO sungguhan**. Coba beberapa jenis transaksi (bayar, terima uang, top up) dan sesuaikan regex/kata kunci kalau hasilnya meleset. Lihat [Penyimpanan Lokal](Penyimpanan-Lokal.md#pindai-struk-ovo).
+- [ ] **Uji Pindai Struk dengan screenshot asli.** Pola pembacaannya (`receipt_parser.dart`) disusun dari contoh yang dibuat sendiri, **belum pernah dicoba dengan screenshot OVO atau GoPay sungguhan**. Coba beberapa jenis transaksi (bayar, terima uang, top up/isi saldo) di kedua aplikasi dan sesuaikan regex/kata kunci kalau hasilnya meleset. Lihat [Penyimpanan Lokal](Penyimpanan-Lokal.md#pindai-struk).
 
 ## Perubahan dari versi Google Sheets
 
@@ -27,7 +27,7 @@ Aplikasi pernah memakai backend Google Sheets lewat Apps Script (riwayatnya ada 
 
 | Temuan | Keterangan |
 |---|---|
-| Uji bawaan tidak sesuai | `test/widget_test.dart` masih uji *counter* dari template Flutter (mencari teks `0` dan ikon `+`). Aplikasi ini tidak punya counter, jadi uji itu tidak akan lolos. Uji yang relevan adalah `test/local_api_test.dart` dan `test/ovo_receipt_parser_test.dart`. |
+| Uji bawaan tidak sesuai | `test/widget_test.dart` masih uji *counter* dari template Flutter (mencari teks `0` dan ikon `+`). Aplikasi ini tidak punya counter, jadi uji itu tidak akan lolos. Uji yang relevan adalah `test/local_api_test.dart` dan `test/receipt_parser_test.dart`. |
 | Dependensi tidak terpakai | `http_parser` ada di `pubspec.yaml` tetapi tidak dipakai di `lib/`. |
 | Berkas kosong | `lib/data/services/dio_client.dart` kosong, dan paket `dio` tidak ada di `pubspec.yaml`. |
 | Widget tidak terpakai | `lib/shared/widget/custom_button.dart` dan `custom_testfield.dart` tidak dirujuk dari luar folder `shared`. |

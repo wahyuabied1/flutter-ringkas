@@ -6,23 +6,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/model/category_model.dart';
 import '../../../data/model/wallet_model.dart';
 import '../../../data/services/api_service.dart';
-import '../../../data/services/ovo_receipt_parser.dart';
+import '../../../data/services/receipt_parser.dart';
 import '../../profile/view/add_wallet_screen.dart';
 
 enum _Step { pick, processing, review, error }
 
-/// Pindai screenshot notifikasi/struk OVO, baca nominal-tanggal-jenisnya
-/// secara otomatis dengan OCR di perangkat (tidak ada gambar yang dikirim
-/// ke internet), lalu tampilkan hasilnya untuk diperiksa sebelum disimpan
-/// sebagai transaksi biasa.
-class ScanOvoScreen extends StatefulWidget {
-  const ScanOvoScreen({super.key});
+/// Pindai screenshot notifikasi/struk pembayaran (OVO, GoPay, dll), baca
+/// nominal-tanggal-jenisnya secara otomatis dengan OCR di perangkat (tidak
+/// ada gambar yang dikirim ke internet), lalu tampilkan hasilnya untuk
+/// diperiksa sebelum disimpan sebagai transaksi biasa.
+class ScanReceiptScreen extends StatefulWidget {
+  const ScanReceiptScreen({super.key});
 
   @override
-  State<ScanOvoScreen> createState() => _ScanOvoScreenState();
+  State<ScanReceiptScreen> createState() => _ScanReceiptScreenState();
 }
 
-class _ScanOvoScreenState extends State<ScanOvoScreen> {
+class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
   final _apiService = ApiService();
   _Step _step = _Step.pick;
   String? _errorMessage;
@@ -95,7 +95,7 @@ class _ScanOvoScreenState extends State<ScanOvoScreen> {
       final wallets = results[0] as List<Wallet>;
       final categories = results[1] as List<Category>;
 
-      final parsed = parseOvoReceipt(rawText);
+      final parsed = parseReceipt(rawText);
       final guessedCategoryId = guessCategoryId(
         categories: categories,
         kind: parsed.kind,
@@ -178,7 +178,7 @@ class _ScanOvoScreenState extends State<ScanOvoScreen> {
         userId: prefs.getString('userId') ?? '',
         type: isExpense ? 'Pengeluaran' : 'Pendapatan',
         amount: amount,
-        note: noteController.text.trim().isEmpty ? 'Transaksi OVO' : noteController.text.trim(),
+        note: noteController.text.trim().isEmpty ? 'Transaksi' : noteController.text.trim(),
         trxDate: trxDate,
         categoryId: selectedCategoryId,
         walletId: selectedWalletId,
@@ -187,7 +187,7 @@ class _ScanOvoScreenState extends State<ScanOvoScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Transaksi dari OVO berhasil disimpan')));
+          .showSnackBar(const SnackBar(content: Text('Transaksi dari struk berhasil disimpan')));
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
@@ -209,7 +209,7 @@ class _ScanOvoScreenState extends State<ScanOvoScreen> {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF374151)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Pindai Struk OVO', style: TextStyle(color: Color(0xFF374151))),
+        title: const Text('Pindai Struk', style: TextStyle(color: Color(0xFF374151))),
       ),
       body: switch (_step) {
         _Step.pick => _buildPick(),
@@ -233,14 +233,15 @@ class _ScanOvoScreenState extends State<ScanOvoScreen> {
             const Icon(Icons.receipt_long, size: 72, color: Color(0xFF9CA3AF)),
             const SizedBox(height: 16),
             const Text(
-              'Pindai Screenshot OVO',
+              'Pindai Screenshot Struk',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF374151)),
             ),
             const SizedBox(height: 8),
             const Text(
-              'Nominal, tanggal, dan jenis transaksi dibaca otomatis dari gambar '
-              'langsung di HP kamu (tidak dikirim ke internet). Hasilnya tetap '
-              'bisa diperiksa dan diedit sebelum disimpan.',
+              'Nominal, tanggal, dan jenis transaksi dari screenshot OVO, GoPay, '
+              'atau e-wallet lain dibaca otomatis langsung di HP kamu (tidak '
+              'dikirim ke internet). Hasilnya tetap bisa diperiksa dan diedit '
+              'sebelum disimpan.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
             ),
@@ -327,6 +328,7 @@ class _ScanOvoScreenState extends State<ScanOvoScreen> {
               child: _KindButton(
                 label: 'Pengeluaran',
                 selected: isExpense,
+                color: const Color(0xFFF75270),
                 onTap: () => _setKind(true),
               ),
             ),
@@ -335,6 +337,7 @@ class _ScanOvoScreenState extends State<ScanOvoScreen> {
               child: _KindButton(
                 label: 'Pemasukan',
                 selected: !isExpense,
+                color: const Color(0xFF5D9E85),
                 onTap: () => _setKind(false),
               ),
             ),
@@ -460,8 +463,11 @@ class _ScanOvoScreenState extends State<ScanOvoScreen> {
 class _KindButton extends StatelessWidget {
   final String label;
   final bool selected;
+  final Color color;
   final VoidCallback onTap;
-  const _KindButton({required this.label, required this.selected, required this.onTap});
+  const _KindButton({
+    required this.label, required this.selected, required this.color, required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -472,9 +478,9 @@ class _KindButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF5D9E85) : Colors.white,
+          color: selected ? color : Colors.white,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: selected ? const Color(0xFF5D9E85) : const Color(0xFFE5E7EB)),
+          border: Border.all(color: selected ? color : const Color(0xFFE5E7EB)),
         ),
         child: Text(
           label,

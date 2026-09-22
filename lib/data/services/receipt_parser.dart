@@ -1,6 +1,6 @@
 import '../model/category_model.dart';
 
-/// Jenis transaksi yang dibaca dari struk/notifikasi OVO.
+/// Jenis transaksi yang dibaca dari struk/notifikasi e-wallet (OVO, GoPay, dll).
 enum TrxKind { expense, income }
 
 /// Hasil pembacaan satu screenshot. Semua field bisa kosong/null kalau
@@ -36,28 +36,27 @@ const _idMonths = {
   'desember': 12, 'des': 12,
 };
 
-/// Baris "label" khas tampilan OVO (judul aksi, status, metadata) yang
+/// Baris "label" khas tampilan e-wallet (judul aksi, status, metadata) yang
 /// bukan nama merchant/catatan, jadi disingkirkan saat mencari catatan.
 const _labelLines = {
-  'ovo', 'status', 'berhasil', 'sukses', 'success', 'gagal', 'pending', 'selesai', 'diproses',
-  'pembayaran', 'pembelian', 'terima uang', 'kirim uang', 'top up', 'transfer', 'penarikan',
-  'tarik tunai',
-  'metode pembayaran', 'no. referensi', 'no referensi', 'nomor referensi', 'id transaksi',
-  'transaction id', 'nominal', 'jumlah', 'total', 'biaya admin', 'biaya layanan',
-  'saldo ovo', 'saldo cash', 'poin ovo', 'points', 'bagikan', 'lihat detail',
-  'kembali ke beranda', 'butuh bantuan', 'pusat bantuan', 'simpan bukti', 'unduh', 'download',
-  'riwayat transaksi', 'detail transaksi', 'rincian transaksi', 'tanggal transaksi',
-  'waktu transaksi',
+  'ovo', 'gopay', 'status', 'berhasil', 'sukses', 'success', 'gagal', 'pending', 'diproses',
+  'selesai', 'pembayaran', 'pembelian', 'terima uang', 'kirim uang', 'top up', 'transfer',
+  'penarikan', 'tarik tunai', 'metode pembayaran', 'no. referensi', 'no referensi',
+  'nomor referensi', 'id transaksi', 'transaction id', 'nominal', 'jumlah', 'total',
+  'biaya admin', 'biaya layanan', 'saldo ovo', 'saldo gopay', 'saldo cash', 'poin ovo',
+  'gopay coins', 'points', 'bagikan', 'lihat detail', 'kembali ke beranda', 'butuh bantuan',
+  'pusat bantuan', 'simpan bukti', 'unduh', 'download', 'riwayat transaksi', 'detail transaksi',
+  'rincian transaksi', 'tanggal transaksi', 'waktu transaksi',
 };
 
-/// Kata kunci penanda pemasukan/pengeluaran, dipakai hanya kalau tanda
-/// +/- di depan "Rp" tidak ditemukan.
+/// Kata kunci penanda pemasukan/pengeluaran (mencakup istilah umum OVO dan
+/// GoPay), dipakai hanya kalau tanda +/- di depan "Rp" tidak ditemukan.
 const _incomeKeywords = [
-  'terima uang', 'diterima', 'top up', 'topup', 'top-up', 'transfer masuk',
-  'uang masuk', 'refund', 'pengembalian dana', 'cashback', 'menerima',
+  'terima uang', 'diterima', 'top up', 'topup', 'top-up', 'isi saldo', 'transfer masuk',
+  'uang masuk', 'refund', 'pengembalian dana', 'cashback', 'menerima', 'gopay coins',
 ];
 const _expenseKeywords = [
-  'pembayaran', 'bayar', 'kirim uang', 'pembelian', 'beli', 'tarik tunai',
+  'pembayaran', 'bayar', 'kirim uang', 'pembelian', 'beli', 'checkout', 'tarik tunai',
   'penarikan', 'transfer keluar', 'uang keluar', 'biaya admin',
 ];
 
@@ -73,7 +72,7 @@ const _categoryKeywords = <String, List<String>>{
     'starbucks', 'gofood', 'grabfood', 'chatime', 'bakso', 'mie',
   ],
   'Transportasi': [
-    'grab', 'gojek', 'gocar', 'grabcar', 'taxi', 'taksi', 'ojek', 'parkir',
+    'grab', 'gojek', 'gocar', 'goride', 'grabcar', 'taxi', 'taksi', 'ojek', 'parkir',
     'tol', 'bensin', 'pertamina', 'shell', 'mrt', 'krl', 'transjakarta', 'busway',
   ],
   'Belanja': [
@@ -96,9 +95,9 @@ const _categoryKeywords = <String, List<String>>{
 /// menjadi nominal, tanggal, jenis, dan catatan.
 ///
 /// Ini murni pencocokan pola teks (regex dan kata kunci), bukan pemahaman
-/// tampilan asli OVO, jadi hasilnya adalah **tebakan** yang selalu perlu
-/// dicek pengguna sebelum disimpan — bukan kepastian.
-ParsedReceipt parseOvoReceipt(String rawText) {
+/// tampilan asli aplikasi e-wallet-nya, jadi hasilnya adalah **tebakan**
+/// yang selalu perlu dicek pengguna sebelum disimpan — bukan kepastian.
+ParsedReceipt parseReceipt(String rawText) {
   final lines = rawText
       .split('\n')
       .map((l) => l.trim())
@@ -220,7 +219,7 @@ String _extractNote(List<String> lines) {
     if (letterCount < 3) continue;
     if (trimmed.length > best.length) best = trimmed;
   }
-  return best.isEmpty ? 'Transaksi OVO' : best;
+  return best.isEmpty ? 'Transaksi' : best;
 }
 
 /// Menebak kategori pengguna yang paling cocok dengan [note] dan [kind].

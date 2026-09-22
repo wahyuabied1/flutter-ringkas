@@ -14,7 +14,7 @@ class TransactionScreen extends StatefulWidget {
 }
 
 class _TransactionScreenState extends State<TransactionScreen> {
-  /// Tampilkan pilihan "Tambah Manual" atau "Pindai Struk OVO". Kalau salah
+  /// Tampilkan pilihan "Tambah Manual" atau "Pindai Struk". Kalau salah
   /// satu dipilih dan berhasil menyimpan transaksi, data layar ini dimuat ulang.
   Future<void> _showAddTransactionMenu() async {
     final route = await showModalBottomSheet<String>(
@@ -33,9 +33,9 @@ class _TransactionScreenState extends State<TransactionScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.receipt_long, color: Color(0xFF5D9E85)),
-              title: const Text('Pindai Struk OVO'),
+              title: const Text('Pindai Struk'),
               subtitle: const Text('Baca nominal & tanggal otomatis dari screenshot'),
-              onTap: () => Navigator.pop(sheetContext, '/scan-ovo'),
+              onTap: () => Navigator.pop(sheetContext, '/scan-receipt'),
             ),
           ],
         ),
@@ -1010,17 +1010,17 @@ class _TransactionScreenState extends State<TransactionScreen> {
     setState(() => _currentNavIndex = index);
     switch (index) {
       case 0:
-        Navigator.of(context).pushNamed('/home');
+        Navigator.of(context).pushReplacementNamed('/home');
         break;
       case 1:
         // Already on Transaction page
         setState(() => _currentNavIndex = 1);
         break;
       case 2:
-        Navigator.of(context).pushNamed('/ringkasan');
+        Navigator.of(context).pushReplacementNamed('/ringkasan');
         break;
       case 3:
-        Navigator.of(context).pushNamed('/profile');
+        Navigator.of(context).pushReplacementNamed('/profile');
         break;
     }
   }

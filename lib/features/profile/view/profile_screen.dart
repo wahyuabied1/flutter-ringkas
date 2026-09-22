@@ -98,13 +98,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     switch (index) {
       case 0:
-        Navigator.of(context).pushNamed('/home');
+        Navigator.of(context).pushReplacementNamed('/home');
         break;
       case 1:
-        Navigator.of(context).pushNamed('/transaction');
+        Navigator.of(context).pushReplacementNamed('/transaction');
         break;
       case 2:
-        Navigator.of(context).pushNamed('/ringkasan');
+        Navigator.of(context).pushReplacementNamed('/ringkasan');
         break;
       case 3:
         // Already on Profile

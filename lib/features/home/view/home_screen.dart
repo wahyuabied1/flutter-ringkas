@@ -368,13 +368,13 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() => _currentNavIndex = 0);
         break;
       case 1:
-        Navigator.of(context).pushNamed('/transaction');
+        Navigator.of(context).pushReplacementNamed('/transaction');
         break;
       case 2:
-        Navigator.of(context).pushNamed('/ringkasan');
+        Navigator.of(context).pushReplacementNamed('/ringkasan');
         break;
       case 3:
-        Navigator.of(context).pushNamed('/profile');
+        Navigator.of(context).pushReplacementNamed('/profile');
         break;
     }
   }
@@ -559,9 +559,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     ListTile(
                       leading: const Icon(Icons.receipt_long, color: Color(0xFF5D9E85)),
-                      title: const Text('Pindai Struk OVO'),
+                      title: const Text('Pindai Struk'),
                       subtitle: const Text('Baca nominal & tanggal otomatis dari screenshot'),
-                      onTap: () => Navigator.pop(sheetContext, '/scan-ovo'),
+                      onTap: () => Navigator.pop(sheetContext, '/scan-receipt'),
                     ),
                   ],
                 ),

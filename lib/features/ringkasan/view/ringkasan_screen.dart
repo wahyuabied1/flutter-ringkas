@@ -624,16 +624,16 @@ class _RingkasanScreenState extends State<RingkasanScreen> {
 
     switch (index) {
       case 0:
-        Navigator.of(context).pushNamed('/home');
+        Navigator.of(context).pushReplacementNamed('/home');
         break;
       case 1:
-        Navigator.of(context).pushNamed('/transaction');
+        Navigator.of(context).pushReplacementNamed('/transaction');
         break;
       case 2:
         setState(() => _currentNavIndex = 2);
         break;
       case 3:
-        Navigator.of(context).pushNamed('/profile');
+        Navigator.of(context).pushReplacementNamed('/profile');
         break;
     }
   }

@@ -3,7 +3,7 @@
 ## Prasyarat
 
 - Flutter dengan Dart **3.9.2 atau lebih baru** (`environment: sdk: ^3.9.2` di `pubspec.yaml`). Flutter 3.35.x sudah dicoba.
-- iOS **15.5** ke atas (naik dari 13.0 sejak fitur Pindai Struk OVO ditambahkan, mensyaratkan `google_mlkit_text_recognition`).
+- iOS **15.5** ke atas (naik dari 13.0 sejak fitur Pindai Struk ditambahkan, mensyaratkan `google_mlkit_text_recognition`).
 
 Jika Anda memakai [FVM](https://fvm.app) atau beberapa versi Flutter, pastikan `flutter --version` dan `dart --version` di terminal menunjukkan Dart 3.9.2 ke atas. Versi yang lebih lama gagal saat `flutter pub get` dengan pesan *"requires SDK version ^3.9.2"*.
 
@@ -28,12 +28,12 @@ Analisis saat ini melaporkan sekitar 31 catatan tingkat *info* (misalnya `withOp
 ## Pengujian
 
 ```bash
-flutter test test/local_api_test.dart test/ovo_receipt_parser_test.dart
+flutter test test/local_api_test.dart test/receipt_parser_test.dart
 ```
 
-[`test/local_api_test.dart`](../../test/local_api_test.dart) menguji seluruh `ApiService` dengan Hive di direktori sementara. [`test/ovo_receipt_parser_test.dart`](../../test/ovo_receipt_parser_test.dart) menguji pembacaan struk OVO (lihat [Penyimpanan Lokal](Penyimpanan-Lokal.md#pindai-struk-ovo)). Keduanya tidak memakai emulator dan berjalan dalam hitungan detik. Setiap perubahan pada logika data atau pembacaan struk sebaiknya disertai uji di berkas yang sesuai.
+[`test/local_api_test.dart`](../../test/local_api_test.dart) menguji seluruh `ApiService` dengan Hive di direktori sementara. [`test/receipt_parser_test.dart`](../../test/receipt_parser_test.dart) menguji pembacaan struk OVO dan GoPay (lihat [Penyimpanan Lokal](Penyimpanan-Lokal.md#pindai-struk)). Keduanya tidak memakai emulator dan berjalan dalam hitungan detik. Setiap perubahan pada logika data atau pembacaan struk sebaiknya disertai uji di berkas yang sesuai.
 
-`ApiService`, `ovo_receipt_parser.dart`, dan model di `lib/data` adalah Dart murni (tanpa impor Flutter). Jadi bila `flutter test` bermasalah di komputer Anda, misalnya karena berkas `flutter_tester` belum diunduh (`flutter precache`), uji yang sama bisa dijalankan dengan `dart test` di proyek Dart biasa yang menunjuk ke folder itu.
+`ApiService`, `receipt_parser.dart`, dan model di `lib/data` adalah Dart murni (tanpa impor Flutter). Jadi bila `flutter test` bermasalah di komputer Anda, misalnya karena berkas `flutter_tester` belum diunduh (`flutter precache`), uji yang sama bisa dijalankan dengan `dart test` di proyek Dart biasa yang menunjuk ke folder itu.
 
 > `test/widget_test.dart` masih uji *counter* bawaan template dan tidak akan lolos. Lihat [Catatan Teknis](Catatan-Teknis.md).
 

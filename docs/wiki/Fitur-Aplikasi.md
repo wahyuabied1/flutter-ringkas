@@ -46,7 +46,7 @@ Empat tab di bagian bawah: **Beranda**, **Transaksi**, **Ringkasan**, **Profil**
 - **Cari Transaksi** (`/search`): pencarian dengan kata kunci, rentang tanggal, dan pilihan banyak kategori dan dompet.
 - **Detail** (`/transaction-detail/<id>`): rincian satu transaksi dengan tombol **Edit** dan **Hapus**.
 
-Tombol **+** di Beranda dan Transaksi membuka pilihan **Tambah Manual** atau **Pindai Struk OVO**.
+Tombol **+** di Beranda dan Transaksi membuka pilihan **Tambah Manual** atau **Pindai Struk**.
 
 ### Tambah dan ubah transaksi (`/add-transaction`)
 Formulir yang sama dipakai untuk menambah dan mengubah.
@@ -61,15 +61,15 @@ Formulir yang sama dipakai untuk menambah dan mengubah.
 
 Nominal selalu disimpan positif. Apakah saldo bertambah atau berkurang ditentukan oleh jenis kategorinya (`income` atau `expense`).
 
-### Pindai Struk OVO (`/scan-ovo`)
-Alternatif tambah transaksi lewat screenshot notifikasi/struk OVO, tanpa mengetik satu per satu.
+### Pindai Struk (`/scan-receipt`)
+Alternatif tambah transaksi lewat screenshot notifikasi/struk pembayaran (OVO, GoPay, dan sejenisnya), tanpa mengetik satu per satu.
 
 1. Pilih screenshot dari galeri.
 2. Teksnya dibaca **di perangkat** dengan OCR (`google_mlkit_text_recognition`) — gambar tidak pernah dikirim ke internet.
 3. Nominal, tanggal, jenis (pemasukan/pengeluaran), dan kategori **ditebak** dari pola teks dan kata kunci.
-4. Hasilnya ditampilkan sebagai formulir yang sudah terisi, dengan teks mentah hasil OCR bisa dilihat lewat "Lihat teks hasil pemindaian". Semua field bisa diperbaiki sebelum disimpan lewat tombol **Simpan Transaksi**.
+4. Hasilnya ditampilkan sebagai formulir yang sudah terisi — tombol **Pengeluaran** berwarna merah dan **Pemasukan** hijau, sama seperti di layar Tambah Manual — dengan teks mentah hasil OCR bisa dilihat lewat "Lihat teks hasil pemindaian". Semua field bisa diperbaiki sebelum disimpan lewat tombol **Simpan Transaksi**.
 
-Ini adalah **tebakan berbasis pola teks**, bukan pemahaman tampilan OVO yang sesungguhnya, jadi hasilnya perlu selalu diperiksa. Detail heuristik dan batasannya ada di [Penyimpanan Lokal](Penyimpanan-Lokal.md#pindai-struk-ovo).
+Ini adalah **tebakan berbasis pola teks**, bukan pemahaman tampilan aplikasi e-wallet yang sesungguhnya, jadi hasilnya perlu selalu diperiksa. Detail heuristik dan batasannya ada di [Penyimpanan Lokal](Penyimpanan-Lokal.md#pindai-struk).
 
 ### Ringkasan (`/ringkasan`)
 - Grafik lingkaran (`fl_chart`) pengeluaran dan pemasukan per kategori.

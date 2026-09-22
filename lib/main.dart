@@ -22,7 +22,7 @@ import 'features/transaksi/view/add_transaction_screen.dart';
 import 'features/transaksi/view/transaction_screen.dart';
 import 'features/transaksi/view/detail_transaction_screen.dart';
 import 'features/transaksi/view/search_screen.dart';
-import 'features/transaksi/view/scan_ovo_screen.dart';
+import 'features/transaksi/view/scan_receipt_screen.dart';
 import 'features/profile/view/profile_screen.dart';
 import 'features/ringkasan/view/ringkasan_screen.dart';
 
@@ -66,7 +66,7 @@ class MyApp extends StatelessWidget {
 
         // Transaction
         '/add-transaction': (context) => const AddTransactionScreen(),
-        '/scan-ovo': (context) => const ScanOvoScreen(),
+        '/scan-receipt': (context) => const ScanReceiptScreen(),
         '/transaction': (context) => const TransactionScreen(),
         '/search': (context) => const SearchScreen(),
 

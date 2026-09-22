@@ -15,7 +15,7 @@ Semua data disimpan **di perangkat** dengan database lokal [Hive CE](https://pub
 - **Transaksi:** tambah, ubah, hapus, lihat detail, dan cari berdasarkan kata kunci, tanggal, kategori, dan dompet.
 - **Kategori:** kategori pemasukan dan pengeluaran per pengguna dengan pilihan warna dan ikon. Pengguna baru langsung mendapat 10 kategori bawaan.
 - **Ringkasan:** grafik lingkaran per kategori dengan periode harian, mingguan, atau bulanan, serta saldo awal dan akhir.
-- **Pindai Struk OVO:** pilih screenshot notifikasi/struk OVO, dan nominal, tanggal, jenis, serta kategorinya dibaca otomatis (OCR di perangkat, tanpa internet). Hasilnya tetap diperiksa dan diedit sebelum disimpan.
+- **Pindai Struk:** pilih screenshot notifikasi/struk pembayaran (OVO, GoPay, dan sejenisnya), dan nominal, tanggal, jenis, serta kategorinya dibaca otomatis (OCR di perangkat, tanpa internet). Hasilnya tetap diperiksa dan diedit sebelum disimpan.
 
 Penjelasan lengkap tiap layar ada di [Fitur Aplikasi](docs/wiki/Fitur-Aplikasi.md).
 
@@ -32,7 +32,7 @@ Penjelasan lengkap tiap layar ada di [Fitur Aplikasi](docs/wiki/Fitur-Aplikasi.m
 | Penyimpanan sesi | `shared_preferences` (token dan nama pengguna) |
 | Grafik | `fl_chart` |
 | Format tanggal | `intl` (lokal `id_ID`) |
-| OCR struk OVO | `google_mlkit_text_recognition` (di perangkat) + `image_picker` |
+| OCR struk pembayaran | `google_mlkit_text_recognition` (di perangkat) + `image_picker` |
 
 ## Memulai
 
@@ -89,7 +89,7 @@ Seluruh dokumentasi ada di [`docs/wiki`](docs/wiki/Home.md):
 |---|---|
 | [Fitur Aplikasi](docs/wiki/Fitur-Aplikasi.md) | Alur pengguna dan fungsi tiap layar |
 | [Arsitektur](docs/wiki/Arsitektur.md) | Lapisan kode, state, navigasi, alur data |
-| [Penyimpanan Lokal](docs/wiki/Penyimpanan-Lokal.md) | Box Hive, field tiap data, cara mengubah skema, dan cara kerja pemindaian struk OVO |
+| [Penyimpanan Lokal](docs/wiki/Penyimpanan-Lokal.md) | Box Hive, field tiap data, cara mengubah skema, dan cara kerja pemindaian struk |
 | [Panduan Pengembangan](docs/wiki/Panduan-Pengembangan.md) | Menjalankan, menguji, menambah fitur, aset, dan build |
 | [Keamanan](docs/wiki/Keamanan.md) | Risiko dan yang perlu dilakukan sebelum rilis |
 | [Catatan Teknis](docs/wiki/Catatan-Teknis.md) | Utang teknis dan daftar pekerjaan sebelum rilis |
