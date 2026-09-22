@@ -542,8 +542,34 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: IconButton(
           icon: const Icon(Icons.add, color: Colors.white, size: 32),
-          onPressed: () {
-            Navigator.of(context).pushNamed('/add-transaction');
+          onPressed: () async {
+            final route = await showModalBottomSheet<String>(
+              context: context,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              builder: (sheetContext) => SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.edit_note, color: Color(0xFF5D9E85)),
+                      title: const Text('Tambah Manual'),
+                      onTap: () => Navigator.pop(sheetContext, '/add-transaction'),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.receipt_long, color: Color(0xFF5D9E85)),
+                      title: const Text('Pindai Struk OVO'),
+                      subtitle: const Text('Baca nominal & tanggal otomatis dari screenshot'),
+                      onTap: () => Navigator.pop(sheetContext, '/scan-ovo'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+            if (route == null || !context.mounted) return;
+            final result = await Navigator.of(context).pushNamed(route);
+            if (result == true) _loadUserData();
           },
         ),
       ),

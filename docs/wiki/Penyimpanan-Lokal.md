@@ -104,3 +104,22 @@ flutter test test/local_api_test.dart
 ```
 
 Cakupannya: register dan login, penolakan email ganda, password salah, dan token palsu; perhitungan saldo saat transaksi ditambah, diubah, dan dihapus; urutan, filter, pencarian, serta saldo awal dan akhir; pemisahan data antar pengguna; hapus berantai dan proteksi kategori terpakai; validasi nominal; dan data yang bertahan setelah database ditutup lalu dibuka lagi.
+
+## Pindai Struk OVO
+
+[`lib/data/services/ovo_receipt_parser.dart`](../../lib/data/services/ovo_receipt_parser.dart) mengubah teks hasil OCR (dari [`lib/features/transaksi/view/scan_ovo_screen.dart`](../../lib/features/transaksi/view/scan_ovo_screen.dart)) menjadi nominal, tanggal, jenis, dan tebakan kategori. Berkas ini Dart murni, tanpa Flutter maupun ML Kit, jadi bisa diuji tanpa emulator sama seperti `ApiService`.
+
+**Cara kerja, semuanya pencocokan pola teks (bukan pemahaman tampilan OVO):**
+
+- **Nominal:** baris pertama yang cocok pola `Rp<angka>`; baris yang mengandung kata "total" diprioritaskan di atas nominal lain (mis. biaya admin). Titik/koma yang diikuti tepat 3 digit dianggap pemisah ribuan, selain itu dianggap desimal.
+- **Jenis (pemasukan/pengeluaran):** tanda `+`/`-` di depan "Rp" kalau ada; kalau tidak ada, dicari dari kata kunci seperti "terima uang" atau "pembayaran". Kalau tidak jelas, bawaannya pengeluaran.
+- **Tanggal:** pola "12 Januari 2026" (termasuk singkatan bulan), "12/01/2026", dan jam "14:30". Kalau tidak ditemukan, layar memakai waktu saat ini.
+- **Catatan:** baris paling panjang yang bukan label bawaan OVO (status, metode pembayaran, dll.), bukan baris nominal, dan bukan baris tanggal.
+- **Tebakan kategori** (`guessCategoryId`): dicocokkan ke kategori pengguna lewat (1) nama kategori yang disebut langsung di catatan, lalu (2) daftar kata kunci merchant bawaan (mis. "kopi" → kategori bernama mengandung "Makanan"). Kalau kategori sudah diganti nama dan tidak disebut di catatan, tebakan ini wajar mengembalikan `null` dan pengguna memilih sendiri.
+
+**Batasan yang perlu diketahui:**
+
+- Semua contoh teks di [`test/ovo_receipt_parser_test.dart`](../../test/ovo_receipt_parser_test.dart) dibuat sendiri untuk mewakili pola umum, **bukan hasil OCR sungguhan dari aplikasi OVO** — belum ada yang mencobanya dengan screenshot asli. Kalau tampilan OVO berbeda dari yang diasumsikan di sini, sesuaikan regex dan daftar kata kunci di `ovo_receipt_parser.dart`.
+- Karena ini tebakan, layar **selalu** menampilkan formulir untuk diperiksa dan diedit sebelum disimpan — tidak pernah menyimpan otomatis tanpa dilihat pengguna.
+- OCR berjalan di perangkat lewat `google_mlkit_text_recognition` (Android/iOS). Model bahasa Latin diunduh Play Services / dibundel sistem saat pertama dipakai; tidak ada gambar yang dikirim ke server mana pun.
+- Butuh iOS **15.5** ke atas (naik dari 13.0 sebelumnya) dan `NSPhotoLibraryUsageDescription` di `Info.plist` untuk akses galeri.

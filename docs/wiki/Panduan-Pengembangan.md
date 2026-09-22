@@ -3,6 +3,7 @@
 ## Prasyarat
 
 - Flutter dengan Dart **3.9.2 atau lebih baru** (`environment: sdk: ^3.9.2` di `pubspec.yaml`). Flutter 3.35.x sudah dicoba.
+- iOS **15.5** ke atas (naik dari 13.0 sejak fitur Pindai Struk OVO ditambahkan, mensyaratkan `google_mlkit_text_recognition`).
 
 Jika Anda memakai [FVM](https://fvm.app) atau beberapa versi Flutter, pastikan `flutter --version` dan `dart --version` di terminal menunjukkan Dart 3.9.2 ke atas. Versi yang lebih lama gagal saat `flutter pub get` dengan pesan *"requires SDK version ^3.9.2"*.
 
@@ -27,12 +28,12 @@ Analisis saat ini melaporkan sekitar 31 catatan tingkat *info* (misalnya `withOp
 ## Pengujian
 
 ```bash
-flutter test test/local_api_test.dart
+flutter test test/local_api_test.dart test/ovo_receipt_parser_test.dart
 ```
 
-[`test/local_api_test.dart`](../../test/local_api_test.dart) menguji seluruh `ApiService` dengan Hive di direktori sementara. Uji ini tidak memakai emulator dan berjalan dalam hitungan detik. Setiap perubahan pada logika data sebaiknya disertai uji di berkas ini.
+[`test/local_api_test.dart`](../../test/local_api_test.dart) menguji seluruh `ApiService` dengan Hive di direktori sementara. [`test/ovo_receipt_parser_test.dart`](../../test/ovo_receipt_parser_test.dart) menguji pembacaan struk OVO (lihat [Penyimpanan Lokal](Penyimpanan-Lokal.md#pindai-struk-ovo)). Keduanya tidak memakai emulator dan berjalan dalam hitungan detik. Setiap perubahan pada logika data atau pembacaan struk sebaiknya disertai uji di berkas yang sesuai.
 
-`ApiService` dan model di `lib/data` adalah Dart murni (tanpa impor Flutter). Jadi bila `flutter test` bermasalah di komputer Anda, misalnya karena berkas `flutter_tester` belum diunduh (`flutter precache`), uji yang sama bisa dijalankan dengan `dart test` di proyek Dart biasa yang menunjuk ke folder itu.
+`ApiService`, `ovo_receipt_parser.dart`, dan model di `lib/data` adalah Dart murni (tanpa impor Flutter). Jadi bila `flutter test` bermasalah di komputer Anda, misalnya karena berkas `flutter_tester` belum diunduh (`flutter precache`), uji yang sama bisa dijalankan dengan `dart test` di proyek Dart biasa yang menunjuk ke folder itu.
 
 > `test/widget_test.dart` masih uji *counter* bawaan template dan tidak akan lolos. Lihat [Catatan Teknis](Catatan-Teknis.md).
 
@@ -84,6 +85,26 @@ Build rilis Android memakai **R8** (`isMinifyEnabled = true`, `isShrinkResources
 - Berkas pemetaan nama (`build/app/outputs/mapping/release/mapping.txt`) dibutuhkan untuk membaca ulang laporan crash yang sudah disamarkan. Simpan bersama tiap rilis.
 
 Daftar lengkap yang perlu dibereskan sebelum rilis ada di [Catatan Teknis](Catatan-Teknis.md#sebelum-rilis-ke-play-store).
+
+## Memasang ke iPhone tanpa kabel (AltStore)
+
+Aplikasi **release** berjalan mandiri di iPhone tanpa Mac (build debug tidak bisa dibuka dari layar utama tanpa Xcode). Jalur ini memakai [AltStore](https://altstore.io): berkas `.ipa` dibuat tanpa tanda tangan, lalu AltStore menandatanganinya dengan Apple ID yang login di AltServer.
+
+1. Buat `.ipa`:
+
+   ```bash
+   flutter build ios --release --no-codesign
+   rm -rf build/ios/ipa && mkdir -p build/ios/ipa/Payload
+   cp -R build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
+   (cd build/ios/ipa && zip -qry Ringkas.ipa Payload && rm -rf Payload)
+   ```
+
+2. Kirim `Ringkas.ipa` ke iPhone (AirDrop atau iCloud Drive), lalu buka lewat **AltStore > My Apps > +** atau pilih *Open in AltStore*.
+3. Pertama kali, percayai profil pengembang di **Settings > General > VPN & Device Management**.
+
+Syaratnya: AltStore sudah terpasang di iPhone (pemasangan pertama AltStore butuh kabel sekali), AltServer berjalan di Mac, dan keduanya satu jaringan Wi-Fi. Agar penyegaran otomatis lewat Wi-Fi, aktifkan **Show this iPhone when on Wi-Fi** di Finder. Dengan Apple ID gratis, aplikasi kedaluwarsa setelah 7 hari dan harus disegarkan (AltServer melakukannya otomatis selama Mac dan iPhone terhubung).
+
+**Pengaturan signing di proyek** (`DEVELOPMENT_TEAM`, `CODE_SIGN_STYLE = Automatic`) hanya dipakai saat membangun lewat Xcode atau `flutter run` ke perangkat. Jalur AltStore mengabaikannya. Bundle id proyek adalah `com.fibod.ringkas`, dan tim yang tertulis sama dengan proyek `flutter-afin` (tim perusahaan). Membangun dengan Xcode akan mendaftarkan App ID itu ke akun tim tersebut.
 
 ## Menandatangani rilis (Play Store)
 
